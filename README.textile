@@ -1,0 +1,3 @@
+h1. Coordenadas cilíndricas
+
+Esta Atividade Interativa (AI) expõe o conceito de coordenadas cilíndricas como a interseção de três superfícies: r = r_0 define uma superfície cilíndrica com eixo ao longo de z e raio r_0. theta = theta_0 define o plano que (sempre) contém o eixo z e que faz com o eixo x o ângulo theta_0. Finalmente, z = z_0 define o plano perpendicular a z a z_0 unidades de distância da origem. O único ponto que está contido simultaneamente nessas três superfícies é aquele representado pelo terno (r_0, theta_0, z_0).

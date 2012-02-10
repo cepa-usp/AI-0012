@@ -10,10 +10,13 @@ package
 	import flash.events.FocusEvent;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
+	import flash.events.TimerEvent;
+	import flash.filters.ColorMatrixFilter;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.text.TextField;
 	import flash.ui.Keyboard;
+	import flash.utils.Timer;
 	import org.papervision3d.core.geom.Lines3D;
 	import org.papervision3d.core.geom.renderables.Line3D;
 	import org.papervision3d.core.geom.renderables.Vertex3D;
@@ -53,6 +56,16 @@ package
 		 * Posição do click na tela.
 		 */
 		private var clickPoint:Point = new Point();
+		
+		/*
+		 * Filtro de conversão para tons de cinza.
+		 */
+		private const GRAYSCALE_FILTER:ColorMatrixFilter = new ColorMatrixFilter([
+			0.2225, 0.7169, 0.0606, 0, 0,
+			0.2225, 0.7169, 0.0606, 0, 0,
+			0.2225, 0.7169, 0.0606, 0, 0,
+			0.0000, 0.0000, 0.0000, 1, 0
+		]);
 		
 		private var cilindro:Cylinder;
 		private var planeTeta:DisplayObject3D;
@@ -119,8 +132,10 @@ package
 			stage.addEventListener(KeyboardEvent.KEY_UP, keyUp);
 			
 			stage.addEventListener(MouseEvent.MOUSE_WHEEL, viewZoom);
-			zoomBtns.zoomIn.addEventListener(MouseEvent.CLICK, viewZoom);
-			zoomBtns.zoomOut.addEventListener(MouseEvent.CLICK, viewZoom);
+			//zoomBtns.zoomIn.addEventListener(MouseEvent.CLICK, viewZoom);
+			//zoomBtns.zoomOut.addEventListener(MouseEvent.CLICK, viewZoom);
+			zoomBtns.zoomIn.addEventListener(MouseEvent.MOUSE_DOWN, initZoom);
+			zoomBtns.zoomOut.addEventListener(MouseEvent.MOUSE_DOWN, initZoom);
 			zoomBtns.zoomIn.mouseChildren = false;
 			zoomBtns.zoomOut.mouseChildren = false;
 			zoomBtns.zoomIn.buttonMode = true;
@@ -129,9 +144,9 @@ package
 			zoomBtns.zoomOut.addEventListener(MouseEvent.MOUSE_OVER, over);
 			
 			var infoTT:ToolTip = new ToolTip(botoes.info, "Informações", 12, 0.8, 100, 0.6, 0.1);
-			var instTT:ToolTip = new ToolTip(botoes.instructions, "Instruções", 12, 0.8, 100, 0.6, 0.1);
+			var instTT:ToolTip = new ToolTip(botoes.instructions, "Orientações", 12, 0.8, 150, 0.6, 0.1);
 			var resetTT:ToolTip = new ToolTip(botoes.resetButton, "Reiniciar", 12, 0.8, 100, 0.6, 0.1);
-			var intTT:ToolTip = new ToolTip(botoes.btnInst, "Reiniciar tutorial", 12, 0.8, 100, 0.6, 0.1);
+			var intTT:ToolTip = new ToolTip(botoes.btnInst, "Reiniciar tutorial", 12, 0.8, 150, 0.6, 0.1);
 			
 			addChild(infoTT);
 			addChild(instTT);
@@ -141,6 +156,7 @@ package
 			setChildIndex(coordenadas, numChildren - 1);
 			setChildIndex(zoomBtns, numChildren - 1);
 			setChildIndex(botoes, numChildren - 1);
+			setChildIndex(borda, numChildren - 1);
 			
 			adicionaListenerCampos();
 			
@@ -149,6 +165,76 @@ package
 			lookAtP();
 			
 			iniciaTutorial();
+			verifyZoomBtns();
+		}
+		
+		private var timerToZoom:Timer = new Timer(200);
+		private function initZoom(e:MouseEvent):void 
+		{
+			if (e.target.name == "zoomIn") {
+				if (zoom < 120) zoom +=  5;
+				timerToZoom.addEventListener(TimerEvent.TIMER, zooningIn);
+			}else {
+				if (zoom > 40) zoom -=  5;
+				timerToZoom.addEventListener(TimerEvent.TIMER, zooningOut);
+			}
+			timerToZoom.start();
+			stage.addEventListener(MouseEvent.MOUSE_UP, stopZooning);
+			
+			verifyZoomBtns();
+			
+			this.camera.zoom = zoom;
+		}
+		
+		private function zooningIn(e:TimerEvent):void 
+		{
+			if (zoom < 120) {
+				zoom +=  5;
+				this.camera.zoom = zoom;
+			}
+			verifyZoomBtns();
+		}
+		
+		private function zooningOut(e:TimerEvent):void 
+		{
+			if (zoom > 40) {
+				zoom -=  5;
+				this.camera.zoom = zoom;
+			}
+			verifyZoomBtns();
+		}
+		
+		private function stopZooning(e:MouseEvent):void 
+		{
+			timerToZoom.stop();
+			timerToZoom.reset();
+			timerToZoom.removeEventListener(TimerEvent.TIMER, zooningIn);
+			timerToZoom.removeEventListener(TimerEvent.TIMER, zooningOut);
+		}
+		
+		private function verifyZoomBtns():void
+		{
+			if (zoom == 40) {
+				zoomBtns.zoomOut.mouseEnabled = false;
+				zoomBtns.zoomOut.filters = [GRAYSCALE_FILTER];
+				zoomBtns.zoomOut.alpha = 0.3;
+			}
+			else {
+				zoomBtns.zoomOut.mouseEnabled = true;
+				zoomBtns.zoomOut.filters = [];
+				zoomBtns.zoomOut.alpha = 1;
+			}
+			
+			if (zoom == 120) {
+				zoomBtns.zoomIn.mouseEnabled = false;
+				zoomBtns.zoomIn.filters = [GRAYSCALE_FILTER];
+				zoomBtns.zoomIn.alpha = 0.3;
+			}
+			else {
+				zoomBtns.zoomIn.mouseEnabled = true;
+				zoomBtns.zoomIn.filters = [];
+				zoomBtns.zoomIn.alpha = 1;
+			}
 		}
 		
 		private function keyUp(e:KeyboardEvent):void 
@@ -215,8 +301,8 @@ package
 		
 		private function getPCoord():void
 		{
-			if(containerP != null){
-				var bounds:Rectangle = viewport.getChildLayer(containerP).getBounds(stage);
+			if(intersecao != null){
+				var bounds:Rectangle = viewport.getChildLayer(intersecao).getBounds(stage);
 				pontoP.x = bounds.x;
 				pontoP.y = bounds.y + bounds.height / 2;
 				//trace(bounds);
@@ -293,6 +379,9 @@ package
 					if (zoom > 40) zoom -=  5;
 				}
 			}
+			
+			verifyZoomBtns();
+			
 			this.camera.zoom = zoom;
 		}
 		
@@ -353,6 +442,21 @@ package
 			raio.addEventListener(FocusEvent.FOCUS_OUT, changeHandler);
 			teta.addEventListener(FocusEvent.FOCUS_OUT, changeHandler);
 			ze.addEventListener(FocusEvent.FOCUS_OUT, changeHandler);
+			
+			raio.addEventListener(FocusEvent.FOCUS_IN, focusInEvent);
+			teta.addEventListener(FocusEvent.FOCUS_IN, focusInEvent);
+			ze.addEventListener(FocusEvent.FOCUS_IN, focusInEvent);
+		}
+		
+		private function focusInEvent(e:FocusEvent):void 
+		{
+			if (e.target == raio) {
+				coordenadas.xBkg.gotoAndStop(2);
+			}else if (e.target  == teta) {
+				coordenadas.yBkg.gotoAndStop(2);
+			}else if (e.target  == ze) {
+				coordenadas.zBkg.gotoAndStop(2);
+			}
 		}
 		
 		private function changeHandler(e:Event):void 
@@ -361,6 +465,7 @@ package
 				if(KeyboardEvent(e).keyCode == Keyboard.ENTER){
 					changePlanes(e.target.name);
 					stage.focus = null;
+					removeFocus();
 				}
 			}else {
 				if (e.target == raio) {
@@ -373,7 +478,15 @@ package
 					if (planeZ != null) ze.text = String(Math.abs(planeZ.z));
 					else ze.text = "";
 				}
+				removeFocus();
 			}
+		}
+		
+		private function removeFocus():void 
+		{
+			coordenadas.xBkg.gotoAndStop(1);
+			coordenadas.yBkg.gotoAndStop(1);
+			coordenadas.zBkg.gotoAndStop(1);
 		}
 		
 		private function changePlanes(name:String):void 
@@ -694,30 +807,30 @@ package
 				
 				containerP.addChild(interLetter);
 				scene.addChild(containerP);
-				containerP.scale = 0.02;
+				containerP.scale = 0.025;
 				
 				interLetter.rotationY = 180;
 				
 			}
 			if (Number(teta.text) >= 0 && Number(teta.text) <= 90)
 			{
-				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) + 1.5;
-				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) + 1.5;
+				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) + 2.5;
+				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) + 2.5;
 			}
 			else if (Number(teta.text) > 90 && Number(teta.text) <= 180)
 			{
-				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) - 1.5;
-				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) + 1.5;
+				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) - 2.5;
+				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) + 2.5;
 			}
 			else if (Number(teta.text) > 180 && Number(teta.text) <= 270)
 			{
-				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) - 1.5;
-				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) - 1.5;
+				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) - 2.5;
+				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) - 2.5;
 			}
 			else
 			{
-				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) + 1.5;
-				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) - 1.5;
+				containerP.x = Number(raio.text) * Math.cos(Number(teta.text) * Math.PI/180) + 2.5;
+				containerP.y = Number(raio.text) * Math.sin(Number(teta.text) * Math.PI / 180) - 2.5;
 			}
 			containerP.z = -Number(ze.text);
 			
@@ -873,8 +986,8 @@ package
 				var deltaTheta:Number = (stage.mouseX - clickPoint.x) * Math.PI / 180;
 				var deltaPhi:Number = (stage.mouseY - clickPoint.y) * Math.PI / 180;
 				
-				theta2 += deltaTheta;
-				phi2 += deltaPhi;
+				theta2 -= deltaTheta;
+				phi2 -= deltaPhi;
 				
 			
 				clickPoint = new Point(stage.mouseX, stage.mouseY);
@@ -917,6 +1030,7 @@ package
 			lookAtP();
 			balao.visible = false;
 			tutoPhase = false;
+			verifyZoomBtns();
 			
 		}
 		

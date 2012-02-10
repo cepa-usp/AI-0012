@@ -55,7 +55,7 @@ package
 			background.filters = [new GlowFilter(0x000000, 0.5, 6, 6, 2, 2)];
 			
 			texto = new TextField();
-			texto.defaultTextFormat = new TextFormat("arial", 12, 0x000000);
+			texto.defaultTextFormat = new TextFormat("verdana", 11, 0x000000);
 			texto.multiline = true;
 			texto.wordWrap = true;
 			texto.autoSize = TextFieldAutoSize.LEFT;

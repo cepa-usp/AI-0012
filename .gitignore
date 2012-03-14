@@ -4,5 +4,5 @@
 # Ignora a versão anterior da configuração do projeto FlashDevelop
 /obj/*.old
 
-# Ignora qualquer pasta deploy: este não é repositório para isso
-deploy/
+# Ignora o arquivo de log do publish.sh
+/publish.log
